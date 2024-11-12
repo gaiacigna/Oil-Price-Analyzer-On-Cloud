@@ -1,0 +1,76 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spark
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spark
+  template:
+    metadata:
+      labels:
+        app: spark
+    spec:
+      initContainers:
+        - name: wait-for-kafka-topic
+          image: bitnami/kubectl
+          command:
+            - /bin/sh
+            - -c
+            - |
+              while [[ "$(kubectl get job kafka-create-topic -o jsonpath='{.status.succeeded}')" != "1" ]]; do
+                echo "Waiting for kafka-create-topic job to complete..."
+                sleep 5
+              done
+      containers:
+      - name: spark
+        image: gaiadock/oilpriceanalyzer:spark
+        imagePullPolicy: Always  
+        command: ["/opt/spark/bin/spark-submit",
+        "--packages", "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0,org.elasticsearch:elasticsearch-spark-30_2.12:8.7.1",
+        "--master", "local[*]",
+        "--conf", "es.net.http.auth.user=${ELASTIC_USER}",
+        "--conf", "es.net.http.auth.pass=${ELASTIC_PASSWORD}",
+        "/opt/code/main.py"]
+        ports:
+        - containerPort: 4040
+        volumeMounts:
+        - name: spark-code
+          mountPath: /opt/code
+        - name: model-folder
+          mountPath: /tmp/model
+        - name: gcs-key
+          mountPath: /etc/gcs-key
+          readOnly: true
+        - name: elastic-ca-cert
+          mountPath: /etc/ssl/certs/
+          readOnly: true
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: "/etc/gcs-key/oil-price-analyzer-28d2c0e4c729.json"
+        - name: ELASTIC_HOST
+          value: "https://0595b857a92b432692ac00a0edaf3cad.us-central1.gcp.cloud.es.io"
+        - name: ELASTIC_USER
+          value: "elastic"
+        - name: ELASTIC_PASSWORD
+          value: "bEFTVBGMlJ22QSlDAvB9boT2"
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "250m"
+          limits:
+            memory: "4Gi"
+            cpu: "500m"
+      volumes:
+      - name: spark-code
+        configMap:
+          name: spark-code-files
+      - name: gcs-key
+        secret:
+          secretName: gcs-key
+      - name: elastic-ca-cert
+        secret:
+          secretName: elastic-ca-cert
+      - name: model-folder
+        emptyDir: {}

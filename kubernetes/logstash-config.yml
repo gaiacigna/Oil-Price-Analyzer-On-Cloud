@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logstash-config
+data:
+  logstash.conf: |
+    input {
+      http_poller {
+        urls => {
+          prices => {
+            url => "http://simulation-server-service.default.svc.cluster.local:7777/prezzo_alle_8.csv"
+            method => get
+          }
+        }
+        request_timeout => 60
+        schedule => { cron => "*/45 * * * *" }
+        codec => "csv"
+      }
+    }
+
+    filter {
+      fingerprint {
+        method => "SHA256"
+        source => ["event"]
+        target => ["hash"]
+        key => "taptap"
+      }
+    }
+
+    output {
+      kafka {
+        bootstrap_servers => "kafkaServer:9092"
+        topic_id => "prices"
+        codec => "json"
+        message_key => "%{hash}"
+        max_request_size => 10485760
+      }
+    }

@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simulation-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: simulation-server
+  template:
+    metadata:
+      labels:
+        app: simulation-server
+    spec:
+      containers:
+      - name: simulation-server
+        image: gaiadock/oilpriceanalyzer:simulationServer
+        ports:
+        - containerPort: 7777

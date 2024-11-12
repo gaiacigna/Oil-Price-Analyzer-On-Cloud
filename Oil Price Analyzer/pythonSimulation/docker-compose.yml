@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  python:
+    build: $PWD
+    image: tap:simulationServer
+    container_name: simulationServer
+    ports:
+      - 7777:7777
+    networks:
+      tap:
+        ipv4_address: 10.0.100.77
+
+
+networks:
+  tap:
+    external: true
+    name: tap
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.0.100.1/24

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash
+  template:
+    metadata:
+      labels:
+        app: logstash
+    spec:
+      initContainers:
+      - name: wait-for-kafka-topic
+        image: bitnami/kubectl  
+        command:
+          - /bin/sh
+          - -c
+          - |
+            while [[ "$(kubectl get job kafka-create-topic -o jsonpath='{.status.succeeded}')" != "1" ]]; do
+                echo "Waiting for kafka-create-topic job to complete..."
+                sleep 5
+            done
+      - name: wait-for-spark
+        image: busybox  # Usa busybox per wget
+        command:
+          - /bin/sh
+          - -c
+          - |
+            while ! wget -qO- http://spark-service:4040; do
+              echo "Waiting for Spark service to be available..."
+              sleep 5
+              done
+      containers:
+      - name: logstash
+        image: gaiadock/oilpriceanalyzer:logstash
+        resources:
+          requests:
+            memory: "512Mi"  # Aumenta la memoria richiesta
+            cpu: "100m"
+          limits:
+            memory: "1Gi"  # Aumenta il limite di memoria
+            cpu: "250m"
+        ports:
+        - containerPort: 5044
+        env:
+        - name: XPACK_MONITORING_ENABLED
+          value: "false"
+        - name: KAFKA_OUTPUT_BOOTSTRAP_SERVERS
+          value: "kafkaServer:9092"
+        - name: KAFKA_OUTPUT_TOPIC
+          value: "prices"
+        volumeMounts:
+        - name: logstash-config
+          mountPath: /usr/share/logstash/pipeline/logstash.conf
+          subPath: logstash.conf
+      volumes:
+      - name: logstash-config
+        configMap:
+          name: logstash-config

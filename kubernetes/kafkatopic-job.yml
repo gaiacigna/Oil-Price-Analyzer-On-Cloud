@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kafka-create-topic
+spec:
+  template:
+    spec:
+      initContainers:
+      - name: wait-for-kafka
+        image: busybox
+        command: ['sh', '-c', 'until nc -z kafkaserver 9092; do echo "Waiting for Kafka..."; sleep 5; done']
+      containers:
+      - name: kafka-create-topic
+        image: gaiadock/oilpriceanalyzer:kafka
+        command: ['sh', '-c', 'kafka-topics.sh --create --topic $KAFKA_TOPIC --bootstrap-server $KAFKA_SERVER --replication-factor 1 --partitions 2 --config max.message.bytes=10485880']
+        env:
+        - name: KAFKA_TOPIC
+          value: "prices"
+        - name: KAFKA_SERVER
+          value: "kafkaServer:9092"  
+      restartPolicy: OnFailure
