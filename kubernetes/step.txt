@@ -1,3 +1,0 @@
-Dopo aver portato tutto su docker hub, ho creato il cluster di kubernetes su google cloud.
-Una volta fatto, ho scritto i file yaml per ogni container, per specificare le funzionalità di ciascuno di essi.
-Li ho poi trasferiti su kubernetes con il comando: kubectl apply -f <nomefile.yml>
