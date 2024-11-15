@@ -11,8 +11,7 @@ services:
       tap:
         ipv4_address: 10.0.100.10
     volumes:
-      # - ./logstash/pipeline/http_poller_original.conf:/usr/share/logstash/pipeline/logstash.conf # original
-      - ./logstash/pipeline/http_poller_simulation.conf:/usr/share/logstash/pipeline/logstash.conf #! for simulation
+      - ./logstash/pipeline/http_poller_simulation.conf:/usr/share/logstash/pipeline/logstash.conf
     depends_on:
       kafkaTopic:
         condition: service_completed_successfully
@@ -59,23 +58,6 @@ services:
     depends_on:
       - zookeeper
       - kafkaServer
-
-
-  # kafkaUI:
-  #   image: provectuslabs/kafka-ui:latest
-  #   container_name: kafkaUI
-  #   ports:
-  #     - 8080:8080
-  #   environment:
-  #     KAFKA_CLUSTERS_0_NAME: local
-  #     KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafkaServer:9092
-  #     LOGGING_LEVEL_ROOT: error
-  #     LOGGING_LEVEL_COM_PROVECTUS: error
-  #   networks: 
-  #     - tap
-  #   depends_on:
-  #     - kafkaServer
-
 
   spark:
     build: ./spark/
